@@ -1,0 +1,92 @@
+import cv2
+import numpy as np
+import tkinter as tk
+
+# Iniciar captura da câmera
+cap = cv2.VideoCapture(0)
+
+if not cap.isOpened():
+    print("Erro ao acessar a câmera")
+    exit()
+
+# Criar a janela principal do Tkinter
+root = tk.Tk()
+root.title("Ajuste HSV")
+
+# Valores iniciais para azul
+h_min, s_min, v_min = 100, 100, 100
+h_max, s_max, v_max = 140, 255, 255
+
+# Função para atualizar os valores HSV
+def on_scale_change(val):
+    global h_min, s_min, v_min, h_max, s_max, v_max
+    h_min = scale_h_min.get()
+    s_min = scale_s_min.get()
+    v_min = scale_v_min.get()
+    h_max = scale_h_max.get()
+    s_max = scale_s_max.get()
+    v_max = scale_v_max.get()
+
+# Criar sliders para ajustar os valores HSV
+scale_h_min = tk.Scale(root, label="H Min", from_=0, to=179, orient="horizontal", command=on_scale_change)
+scale_h_min.set(h_min)
+scale_h_min.pack()
+
+scale_s_min = tk.Scale(root, label="S Min", from_=0, to=255, orient="horizontal", command=on_scale_change)
+scale_s_min.set(s_min)
+scale_s_min.pack()
+
+scale_v_min = tk.Scale(root, label="V Min", from_=0, to=255, orient="horizontal", command=on_scale_change)
+scale_v_min.set(v_min)
+scale_v_min.pack()
+
+scale_h_max = tk.Scale(root, label="H Max", from_=0, to=179, orient="horizontal", command=on_scale_change)
+scale_h_max.set(h_max)
+scale_h_max.pack()
+
+scale_s_max = tk.Scale(root, label="S Max", from_=0, to=255, orient="horizontal", command=on_scale_change)
+scale_s_max.set(s_max)
+scale_s_max.pack()
+
+scale_v_max = tk.Scale(root, label="V Max", from_=0, to=255, orient="horizontal", command=on_scale_change)
+scale_v_max.set(v_max)
+scale_v_max.pack()
+
+# Função para capturar os frames da câmera
+def update_camera():
+    ret, frame = cap.read()
+    
+    if not ret:
+        print("Erro ao capturar frame")
+        root.after(10, update_camera)
+        return
+    
+    # Converter para HSV
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    
+    # Criar máscara com os valores HSV ajustáveis
+    lower_bound = np.array([h_min, s_min, v_min])
+    upper_bound = np.array([h_max, s_max, v_max])
+    mask = cv2.inRange(hsv, lower_bound, upper_bound)
+    resultado = cv2.bitwise_and(frame, frame, mask=mask)
+
+    # Mostrar as imagens na tela
+    cv2.imshow("Webcam", frame)
+    cv2.imshow("Mascara", mask)
+    cv2.imshow("Filtrado", resultado)
+
+    # Fechar programa ao pressionar 'q'
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        root.destroy()
+        cap.release()
+        cv2.destroyAllWindows()
+        return
+
+    # Reexecutar a função após 10ms
+    root.after(10, update_camera)
+
+# Iniciar a captura de vídeo no Tkinter
+update_camera()
+
+# Iniciar o loop do Tkinter
+root.mainloop()
